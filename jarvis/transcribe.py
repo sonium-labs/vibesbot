@@ -1,45 +1,78 @@
-# ─── streaming transcription with Vosk (always-warm) ─────────────────────
-import json, numpy as np
+"""
+Real-time speech transcription module using Vosk.
+
+This module provides continuous speech-to-text functionality with silence detection
+for automatic termination. It uses the Vosk offline speech recognition engine
+with a pre-loaded model for efficient, low-latency transcription.
+"""
+
+import json
+import numpy as np
 from vosk import Model, KaldiRecognizer
 
-RATE  = 16_000
-CHUNK = 512
+# Audio stream configuration constants
+RATE = 16_000        # Sample rate in Hz, must match model's expected rate
+CHUNK = 512          # Number of frames per buffer - smaller values reduce latency
 
-model = Model("model")                 # one-time load
-rec   = KaldiRecognizer(model, RATE)   # persistent recogniser
+# Initialize Vosk components (done once at module load for performance)
+model = Model("model")                # Load speech recognition model into memory
+rec = KaldiRecognizer(model, RATE)   # Create persistent recognition object
 
-# ----- simple silence-based stop (Phase-1) -------------------------------
-RMS_THRESHOLD      = 900               # may tune per microphone
-SILENCE_CHUNKS_END = int(1.2 * RATE / CHUNK)   # ≈1.2 s of quiet
-MAX_CHUNKS         = int(6 * RATE / CHUNK)     # hard cap 6 s
+# Silence detection configuration
+RMS_THRESHOLD = 900               # Root Mean Square amplitude threshold for silence detection
+SILENCE_CHUNKS_END = int(1.2 * RATE / CHUNK)   # Number of silent chunks before stopping (~1.2 seconds)
+MAX_CHUNKS = int(6 * RATE / CHUNK)             # Maximum recording duration (6 seconds)
 
 def record_and_transcribe(stream):
-    """Stream audio from shared PyAudio handle into Vosk until silence."""
-    rec.Reset()
-    silent = 0
-    total  = 0
+    """
+    Record and transcribe audio from a PyAudio stream until silence is detected.
+
+    The function implements a simple silence detection algorithm based on RMS amplitude
+    and automatically stops recording when either:
+    1. The specified duration of silence is detected (SILENCE_CHUNKS_END)
+    2. The maximum recording duration is reached (MAX_CHUNKS)
+
+    Args:
+        stream: PyAudio stream object configured with matching RATE and CHUNK settings
+
+    Returns:
+        str: Transcribed text, or empty string if no speech was detected
+
+    Implementation details:
+        - Continuously feeds audio chunks to Vosk recognizer
+        - Calculates RMS amplitude for silence detection
+        - Maintains silence and total chunk counters for termination conditions
+    """
+    rec.Reset()                  # Clear any previous recognition state
+    silent = 0                  # Counter for consecutive silent chunks
+    total = 0                   # Counter for total chunks processed
 
     while True:
+        # Read audio chunk from stream (non-blocking to prevent buffer overflow)
         data = stream.read(CHUNK, exception_on_overflow=False)
-        rec.AcceptWaveform(data)       # feed recogniser continuously
+        rec.AcceptWaveform(data)    # Feed audio data to Vosk recognizer
         total += 1
 
-        # RMS-based silence detection
+        # Convert audio data to numpy array for RMS calculation
         audio_i16 = np.frombuffer(data, dtype=np.int16)
         if audio_i16.size:
+            # Calculate Root Mean Square amplitude of the audio chunk
             rms = np.sqrt(np.mean(audio_i16.astype(np.float32)**2))
         else:
-            rms = 0.0
+            rms = 0.0          # Handle empty chunks gracefully
 
+        # Silence detection logic
         if rms < RMS_THRESHOLD:
             silent += 1
             if silent >= SILENCE_CHUNKS_END:
-                break
+                break          # Stop if silence threshold duration is reached
         else:
-            silent = 0
+            silent = 0        # Reset silence counter on detecting sound
 
-        if total >= MAX_CHUNKS:        # safety cap
+        # Safety timeout to prevent infinite recording
+        if total >= MAX_CHUNKS:
             break
 
+    # Extract transcribed text from Vosk's JSON result
     result = json.loads(rec.FinalResult())
     return result.get("text", "").strip()
