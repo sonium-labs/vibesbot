@@ -8,15 +8,35 @@ with a pre-loaded model for efficient, low-latency transcription.
 
 import json
 import numpy as np
-from vosk import Model, KaldiRecognizer
+
+import sys, threading, time
 
 # Audio stream configuration constants
 RATE = 16_000        # Sample rate in Hz, must match model's expected rate
 CHUNK = 512          # Number of frames per buffer - smaller values reduce latency
 
+def _spinner(msg=""):
+    spinner = "|/-\\"
+    idx = 0
+    while not getattr(threading.current_thread(), "stop_spinner", False):
+        print(f"\r{msg} {spinner[idx % len(spinner)]}", end="", flush=True)
+        idx += 1
+        time.sleep(0.1)
+    print("\r" + " " * (len(msg) + 2) + "\r", end="", flush=True)
+
+# Start spinner in a thread
+spinner_thread = threading.Thread(target=_spinner)
+spinner_thread.start()
+
 # Initialize Vosk components (done once at module load for performance)
+from vosk import Model, KaldiRecognizer
 model = Model("model")                # Load speech recognition model into memory
 rec = KaldiRecognizer(model, RATE)   # Create persistent recognition object
+
+# Stop spinner
+spinner_thread.stop_spinner = True
+spinner_thread.join()
+print("Model loaded.")
 
 # Silence detection configuration
 RMS_THRESHOLD = 900               # Root Mean Square amplitude threshold for silence detection
