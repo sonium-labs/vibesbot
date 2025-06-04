@@ -6,13 +6,6 @@ from dotenv import load_dotenv
 import requests
 import pyttsx3
 
-########### Configs ###########
-monitor_number = 2 # 1 is Windows monitor 1, etc.
-textbox_x_padding = 300
-textbox_y_padding = 50
-discord_switch_delay_sec = 0.5
-###############################
-
 # Load environment variables from .env file
 load_dotenv()
 
