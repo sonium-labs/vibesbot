@@ -16,27 +16,45 @@ from wake_word import wait_for_wake_word
 from transcribe import record_and_transcribe
 from pynput.keyboard import Controller
 from dotenv import load_dotenv
-import pyttsx3, requests, pyaudio, os, time
+import pyttsx3, requests, pyaudio, os, time, threading, queue
 
 # Initialize environment variables and global service objects
 load_dotenv()                                 # Load configuration from .env file
 keyboard = Controller()                       # For potential keyboard control
-tts_engine = pyttsx3.init()                  # Text-to-speech engine
+
+# ─── async, interruptible text-to-speech ────────────────────────────────
+class AsyncTTS:
+    """Threaded pyttsx3 wrapper with .speak_async() and .stop()."""
+    def __init__(self):
+        self._q = queue.Queue()
+        self._thread = threading.Thread(target=self._worker, daemon=True)
+        self._thread.start()
+
+    def _worker(self):
+        self.engine = pyttsx3.init()
+        for text in iter(self._q.get, None):   # sentinel None shuts down
+            self.engine.say(text)
+            self.engine.runAndWait()
+
+    # enqueue text, return immediately
+    def speak_async(self, text: str):
+        self._q.put(text)
+
+    # interrupt current speech instantly
+    def stop(self):
+        if hasattr(self, "engine"):
+            self.engine.stop()
+
+    # clean shutdown (call in main finally:)
+    def shutdown(self):
+        self._q.put(None)
+
+tts = AsyncTTS()                              # Async text-to-speech engine
 
 # Music bot configuration from environment
 guild_id = os.getenv("GUILD_ID")             # Discord server ID
 user_id = os.getenv("USER_ID")               # User's Discord ID
 voice_channel_id = os.getenv("VOICE_CHANNEL_ID")  # Target voice channel
-
-def speak(text: str):
-    """
-    Synthesize and play text as speech.
-    
-    Args:
-        text: String to be spoken by the text-to-speech engine
-    """
-    tts_engine.say(text)
-    tts_engine.runAndWait()
 
 # Configure and initialize shared audio input stream
 RATE = 16_000                                # Sample rate in Hz
@@ -103,38 +121,39 @@ def listen_for_voice_commands():
     while True:
         print('Say "Jarvis" to wake...')
         wait_for_wake_word(shared_stream)           # Wait for activation
+        tts.stop()   # interrupt any ongoing speech
         print("Wake word detected.")
         transcript = record_and_transcribe(shared_stream)
         print(f"You said: {transcript}")
 
         # Command interpretation and execution
         if ("now" in transcript and "playing" in transcript):
-            speak("Now playing.")
+            tts.speak_async("Now playing.")
             send_command("now-playing")
         elif "played" in transcript:
             # Handle alternative phrasing for play command
             song = transcript.replace("played", "", 1).strip()
             if song:
-                speak(f"Playing {song}")
+                tts.speak_async(f"Playing {song}")
                 send_play_command(song)
         elif "play" in transcript:
             song = transcript.replace("play", "", 1).strip()
             if song:
-                speak(f"Playing {song}")
+                tts.speak_async(f"Playing {song}")
                 send_play_command(song)
         # Basic playback controls
-        elif "stop"   in transcript: speak("Stopping.");  send_command("stop")
-        elif "pause"  in transcript: speak("Pausing.");   send_command("pause")
-        elif "resume" in transcript: speak("Resuming.");  send_command("resume")
-        elif "next"   in transcript: speak("Skipping.");  send_command("next")
-        elif "clear"  in transcript: speak("Clearing.");  send_command("clear")
+        elif "stop"   in transcript: tts.speak_async("Stopping.");  send_command("stop")
+        elif "pause"  in transcript: tts.speak_async("Pausing.");   send_command("pause")
+        elif "resume" in transcript: tts.speak_async("Resuming.");  send_command("resume")
+        elif "next"   in transcript: tts.speak_async("Skipping.");  send_command("next")
+        elif "clear"  in transcript: tts.speak_async("Clearing.");  send_command("clear")
         # Exit commands
         elif ("kill" in transcript and "self" in transcript) or \
              ("self" in transcript and "destruct" in transcript):
-            speak("Goodbye.")
+            tts.speak_async("Goodbye.")
             break
         else:
-            speak("Sorry, I didn't understand that command.")
+            tts.speak_async("Sorry, I didn't understand that command.")
 
 def main():
     """
@@ -149,6 +168,7 @@ def main():
         # Clean up audio resources
         shared_stream.close()
         _pa.terminate()
+        tts.shutdown()
 
 if __name__ == "__main__":
     main()
