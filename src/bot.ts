@@ -249,6 +249,6 @@ export default class Bot {
       }
     });
 
-    app.listen(3001, () => console.log('API listening on port 3001'));
+    app.listen(3003, () => console.log('API listening on port 3003'));
   }
 }

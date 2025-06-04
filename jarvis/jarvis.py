@@ -1,13 +1,9 @@
 from wake_word import wait_for_wake_word
 from transcribe import record_and_transcribe
-from pynput.keyboard import Controller, Key
-from screeninfo import get_monitors
-import pygetwindow
-import time
-import pyautogui
-import requests
-from dotenv import load_dotenv
+from pynput.keyboard import Controller
 import os
+from dotenv import load_dotenv
+import requests
 import pyttsx3
 
 ########### Configs ###########
@@ -17,11 +13,14 @@ textbox_y_padding = 50
 discord_switch_delay_sec = 0.5
 ###############################
 
+# Load environment variables from .env file
+load_dotenv()
+
 keyboard = Controller()
 
-guild_id = "418602424648073218"  # or from os.getenv("GUILD_ID")
-user_id = "352114514466045952"
-voice_channel_id = "516109992860975122"
+guild_id = os.getenv("GUILD_ID")
+user_id = os.getenv("USER_ID")
+voice_channel_id = os.getenv("VOICE_CHANNEL_ID")
 
 # Initialize text-to-speech engine
 tts_engine = pyttsx3.init()
@@ -83,7 +82,7 @@ def listen_for_voice_commands():
             speak("Sorry, I didn't understand that command.")
 
 def send_play_command(song_name: str):
-    url = "http://localhost:3001/command/play"
+    url = "http://192.168.0.173:3003/command/play"
     print(f"[DEBUG] Using guild_id: {guild_id}, user_id: {user_id}")
     payload = {
         "guildId": guild_id,
@@ -100,7 +99,7 @@ def send_play_command(song_name: str):
         return None
 
 def send_command(command: str):
-    url = f"http://localhost:3001/command/{command}"
+    url = f"http://192.168.0.173:3003/command/{command}"
     print(f"[DEBUG] Using guild_id: {guild_id}, user_id: {user_id}")
     payload = {
         "guildId": guild_id,

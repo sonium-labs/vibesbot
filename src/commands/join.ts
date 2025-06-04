@@ -30,7 +30,5 @@ export default class Join implements Command {
     await player.connect(targetVoiceChannel as VoiceChannel);
 
     await interaction.reply(`Joined <#${targetVoiceChannel.id}>`);
-
-    console.log("Joined! Player status: ", player.status)
   }
 }
