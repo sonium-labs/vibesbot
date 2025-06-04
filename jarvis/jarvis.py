@@ -82,7 +82,7 @@ def listen_for_voice_commands():
             speak("Sorry, I didn't understand that command.")
 
 def send_play_command(song_name: str):
-    url = "http://192.168.0.173:3003/command/play"
+    url = "https://vibesbot.no-vibes.com/command/play"
     print(f"[DEBUG] Using guild_id: {guild_id}, user_id: {user_id}")
     payload = {
         "guildId": guild_id,
@@ -99,7 +99,7 @@ def send_play_command(song_name: str):
         return None
 
 def send_command(command: str):
-    url = f"http://192.168.0.173:3003/command/{command}"
+    url = f"https://vibesbot.no-vibes.com/command/{command}"
     print(f"[DEBUG] Using guild_id: {guild_id}, user_id: {user_id}")
     payload = {
         "guildId": guild_id,

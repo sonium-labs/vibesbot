@@ -55,8 +55,6 @@ export default class Play implements Command {
   public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const query = interaction.options.getString('query')!;
 
-    console.log('ABOUT TO ADD TO QUEUE')
-
     await this.addQueryToQueue.addToQueue({
       interaction,
       query: query.trim(),

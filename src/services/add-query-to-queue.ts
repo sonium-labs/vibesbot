@@ -47,7 +47,6 @@ export default class AddQueryToQueue {
     skipCurrentTrack: boolean;
     interaction: ChatInputCommandInteraction;
   }): Promise<void> {
-    console.log("ADDING TO QUEUE")
     const guildId = interaction.guild!.id;
     const player = this.playerManager.get(guildId);
     const wasPlayingSong = player.getCurrent() !== null;
@@ -93,9 +92,6 @@ export default class AddQueryToQueue {
         statusMsg = 'resuming playback';
       }
 
-      await interaction.editReply({
-        embeds: [buildPlayingMessageEmbed(player)],
-      });
     } else if (player.status === STATUS.IDLE || player.status === STATUS.PAUSED) {
       // Player is idle, start playback instead
       await player.play();
@@ -122,11 +118,10 @@ export default class AddQueryToQueue {
       extraMsg = ` (${extraMsg})`;
     }
 
-    if (newSongs.length === 1) {
-      await interaction.editReply(`u betcha, **${firstSong.title}** added to the${addToFrontOfQueue ? ' front of the' : ''} queue${skipCurrentTrack ? 'and current track skipped' : ''}${extraMsg}`);
-    } else {
-      await interaction.editReply(`u betcha, **${firstSong.title}** and ${newSongs.length - 1} other songs were added to the queue${skipCurrentTrack ? 'and current track skipped' : ''}${extraMsg}`);
-    }
+    await interaction.reply({
+      content: '',
+      embeds: [buildPlayingMessageEmbed(player)],
+    });
   }
 
   private async skipNonMusicSegments(song: SongMetadata) {

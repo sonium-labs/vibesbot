@@ -201,6 +201,8 @@ export default class Bot {
         user: member.user,
         member,
         channel,
+        replied: false,
+        deferred: false,
         options: {
           getString: (key: string) => options?.[key],
           getBoolean: (key: string) => {
@@ -217,15 +219,21 @@ export default class Bot {
           },
           getSubcommand: () => options?.subcommand,
         },
-        reply: (msg: any) => {
+        reply: function (msg: any) {
+          this.replied = true;
           console.log(`[API] Command reply:`, msg);
           return Promise.resolve(msg);
         },
-        deferReply: (opts?: any) => {
+        deferReply: function (opts?: any) {
+          this.deferred = true;
           console.log(`[API] deferReply called`, opts);
           return Promise.resolve();
         },
-        editReply: (msg: any) => {
+        editReply: function (msg: any) {
+          if (!this.deferred && !this.replied) {
+            throw new Error('The reply to this interaction has not been sent or deferred.');
+          }
+          this.replied = true;
           console.log(`[API] editReply:`, msg);
           return Promise.resolve(msg);
         },
