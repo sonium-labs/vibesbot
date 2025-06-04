@@ -123,8 +123,14 @@ def listen_for_voice_commands():
         wait_for_wake_word(shared_stream)           # Wait for activation
         tts.stop()   # interrupt any ongoing speech
         print("Wake word detected.")
-        transcript = record_and_transcribe(shared_stream)
+        transcript = ""
+        for partial in record_and_transcribe(shared_stream):
+            # overwrite the current line with the growing sentence
+            print('\r' + partial + ' ' * 20, end='', flush=True)
+            transcript = partial          # will end up holding the final yield
+        print()                           # newline after the overwrite loop
         print(f"You said: {transcript}")
+
 
         # Command interpretation and execution
         if ("now" in transcript and "playing" in transcript):

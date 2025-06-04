@@ -46,12 +46,20 @@ def record_and_transcribe(stream):
     rec.Reset()                  # Clear any previous recognition state
     silent = 0                  # Counter for consecutive silent chunks
     total = 0                   # Counter for total chunks processed
+    last_partial = ""           # Last partial transcription (not used in final result)
 
     while True:
         # Read audio chunk from stream (non-blocking to prevent buffer overflow)
         data = stream.read(CHUNK, exception_on_overflow=False)
         rec.AcceptWaveform(data)    # Feed audio data to Vosk recognizer
         total += 1
+        
+        # ----- Partial result streaming -----
+        partial_json = json.loads(rec.PartialResult())
+        partial = partial_json.get("partial", "").strip()
+        if partial and partial != last_partial:
+            yield partial                # stream out new words
+            last_partial = partial
 
         # Convert audio data to numpy array for RMS calculation
         audio_i16 = np.frombuffer(data, dtype=np.int16)
