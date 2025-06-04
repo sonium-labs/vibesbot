@@ -83,14 +83,12 @@ def listen_for_voice_commands():
 
 def send_play_command(song_name: str):
     url = "https://vibesbot.no-vibes.com/command/play"
-    print(f"[DEBUG] Using guild_id: {guild_id}, user_id: {user_id}")
     payload = {
         "guildId": guild_id,
         "userId": user_id,
         "voiceChannelId": voice_channel_id,
         "options": {"query": song_name}
     }
-    print(f"[DEBUG] Payload for play: {payload}")
     response = requests.post(url, json=payload)
     try:
         return response.json()
@@ -100,14 +98,12 @@ def send_play_command(song_name: str):
 
 def send_command(command: str):
     url = f"https://vibesbot.no-vibes.com/command/{command}"
-    print(f"[DEBUG] Using guild_id: {guild_id}, user_id: {user_id}")
     payload = {
         "guildId": guild_id,
         "userId": user_id,
         "voiceChannelId": voice_channel_id,
         "options": {}
     }
-    print(f"[DEBUG] Payload for command '{command}': {payload}")
     response = requests.post(url, json=payload)
     try:
         return response.json()
