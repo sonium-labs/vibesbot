@@ -8,7 +8,7 @@ import {prettyTime} from '../utils/time.js';
 import durationStringToSeconds from '../utils/duration-string-to-seconds.js';
 
 @injectable()
-export default class implements Command {
+export default class ForwardSeek implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('fseek')
     .setDescription('seek forward in the current song')

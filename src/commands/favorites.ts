@@ -8,7 +8,7 @@ import {prisma} from '../utils/db.js';
 import {Pagination} from 'pagination.djs';
 
 @injectable()
-export default class implements Command {
+export default class Favorites implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('favorites')
     .setDescription('add a song to your favorites')

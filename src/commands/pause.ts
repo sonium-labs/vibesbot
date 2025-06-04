@@ -7,7 +7,7 @@ import {STATUS} from '../services/player.js';
 import Command from './index.js';
 
 @injectable()
-export default class implements Command {
+export default class Pause implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('pause')
     .setDescription('pause the current song');

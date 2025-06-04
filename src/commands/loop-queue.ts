@@ -7,7 +7,7 @@ import {SlashCommandBuilder} from '@discordjs/builders';
 import {STATUS} from '../services/player.js';
 
 @injectable()
-export default class implements Command {
+export default class LoopQueue implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('loop-queue')
     .setDescription('toggle looping the entire queue');

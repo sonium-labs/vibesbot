@@ -7,7 +7,7 @@ import {SlashCommandBuilder} from '@discordjs/builders';
 import {buildPlayingMessageEmbed} from '../utils/build-embed.js';
 
 @injectable()
-export default class implements Command {
+export default class NowPlaying implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('now-playing')
     .setDescription('shows the currently played song');

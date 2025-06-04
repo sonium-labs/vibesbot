@@ -1,0 +1,128 @@
+import express, { Request, Response } from 'express';
+import Command from './commands/index.js';
+import container from './inversify.config.js';
+import { TYPES } from './types.js';
+
+const app = express();
+app.use(express.json());
+
+class MockCollection extends Map<any, any> {
+  constructor(entries?: readonly (readonly [any, any])[] | Iterable<[any, any]>) {
+    super(entries);
+  }
+  reduce<T>(fn: (acc: T, val: any, key: any, collection: this) => T, init: T): T {
+    let acc = init;
+    for (const [key, value] of this.entries()) {
+      acc = fn(acc, value, key, this);
+    }
+    return acc;
+  }
+}
+
+app.post('/command/:name', async (req: Request, res: Response) => {
+  const { name } = req.params;
+  const { guildId, userId, options, voiceChannelId } = req.body;
+
+  // Ensure IDs are strings
+  const guildIdStr = String(guildId);
+  const userIdStr = String(userId);
+  const voiceChannelIdStr = String(voiceChannelId);
+
+  console.log(`[API] Received command: ${name}`);
+  console.log(`[API] Body:`, req.body);
+
+  const command = container.getAll<Command>(TYPES.Command).find(
+    cmd => cmd.slashCommand?.name === name
+  );
+  if (!command) {
+    console.log(`[API] Command not found: ${name}`);
+    return res.status(404).json({ error: 'Command not found' });
+  }
+
+  // Use mock objects instead of the real Discord client
+  const mockMembers = new MockCollection([
+    [userIdStr, { id: userIdStr, user: { id: userIdStr, bot: false } }]
+  ]);
+
+  const mockGuild = {
+    id: guildIdStr,
+    channels: {
+      cache: new Map([[voiceChannelIdStr, null as any]]), // We'll set the channel after it's created
+    },
+    voiceAdapterCreator: () => ({}), // <-- Add this line
+  };
+
+  const mockVoiceChannel = {
+    id: voiceChannelIdStr,
+    type: 2, // 2 = GUILD_VOICE
+    name: 'general',
+    members: mockMembers,
+    guild: mockGuild, // <-- Add this line
+  };
+
+  // Now set the channel in the guild's cache to the mockVoiceChannel
+  mockGuild.channels.cache.set(voiceChannelIdStr, mockVoiceChannel);
+
+  const mockMember = {
+    id: userIdStr,
+    user: { id: userIdStr },
+    voice: {
+      channel: mockVoiceChannel,
+    },
+  };
+
+  const mockInteraction = {
+    guild: mockGuild,
+    user: { id: userIdStr },
+    member: mockMember,
+    channel: { id: voiceChannelIdStr }, // <-- Add this line
+    options: {
+      getString: (key: string) => options?.[key],
+      getBoolean: (key: string) => {
+        const value = options?.[key];
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'string') return value === 'true';
+        return undefined;
+      },
+      getInteger: (key: string) => {
+        const value = options?.[key];
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string' && !isNaN(Number(value))) return Number(value);
+        return undefined;
+      },
+    },
+    reply: (msg: any) => {
+      console.log(`[API] Command reply:`, msg);
+      return Promise.resolve(msg);
+    },
+    deferReply: (opts?: any) => {
+      console.log(`[API] deferReply called`, opts);
+      return Promise.resolve();
+    },
+    editReply: (msg: any) => {
+      console.log(`[API] editReply:`, msg);
+      return Promise.resolve(msg);
+    },
+    isChatInputCommand: () => true,
+  };
+
+  try {
+    if (typeof command.execute === 'function') {
+      console.log(`[API] Executing command: ${name}`);
+      await command.execute(mockInteraction as any);
+      console.log(`[API] Command executed: ${name}`);
+      return res.json({ success: true });
+    } else {
+      console.log(`[API] Command does not support execution: ${name}`);
+      return res.status(400).json({ error: 'Command does not support execution' });
+    }
+  } catch (e) {
+    const err = e as Error;
+    console.log(`[API] Error executing command: ${name}`, err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+export function startApiServer() {
+  app.listen(3001, () => console.log('API listening on port 3001'));
+}

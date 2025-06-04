@@ -8,7 +8,7 @@ import {buildQueueEmbed} from '../utils/build-embed.js';
 import {getGuildSettings} from '../utils/get-guild-settings.js';
 
 @injectable()
-export default class implements Command {
+export default class Queue implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('queue')
     .setDescription('show the current queue')

@@ -1,5 +1,4 @@
-import express from 'express';
-import {Client, Collection, User, GatewayIntentBits, ChatInputCommandInteraction} from 'discord.js';
+import {Client, Collection, User} from 'discord.js';
 import {inject, injectable} from 'inversify';
 import ora from 'ora';
 import {TYPES} from './types.js';
@@ -16,21 +15,15 @@ import {REST} from '@discordjs/rest';
 import {Routes} from 'discord-api-types/v10';
 import registerCommandsOnGuild from './utils/register-commands-on-guild.js';
 
-const app = express();
-app.use(express.json());
-
 @injectable()
-export default class Bot {
+export default class {
   private readonly client: Client;
   private readonly config: Config;
   private readonly shouldRegisterCommandsOnBot: boolean;
-  private readonly commandsByName: Collection<string, Command>;
-  private readonly commandsByButtonId: Collection<string, Command>;
+  private readonly commandsByName!: Collection<string, Command>;
+  private readonly commandsByButtonId!: Collection<string, Command>;
 
-  constructor(
-    @inject(TYPES.Client) client: Client,
-    @inject(TYPES.Config) config: Config
-  ) {
+  constructor(@inject(TYPES.Client) client: Client, @inject(TYPES.Config) config: Config) {
     this.client = client;
     this.config = config;
     this.shouldRegisterCommandsOnBot = config.REGISTER_COMMANDS_ON_BOT;
@@ -41,15 +34,18 @@ export default class Bot {
   public async register(): Promise<void> {
     // Load in commands
     for (const command of container.getAll<Command>(TYPES.Command)) {
+      // Make sure we can serialize to JSON without errors
       try {
         command.slashCommand.toJSON();
       } catch (error) {
         console.error(error);
         throw new Error(`Could not serialize /${command.slashCommand.name ?? ''} to JSON`);
       }
+
       if (command.slashCommand.name) {
         this.commandsByName.set(command.slashCommand.name, command);
       }
+
       if (command.handledButtonIds) {
         for (const buttonId of command.handledButtonIds) {
           this.commandsByButtonId.set(buttonId, command);
@@ -58,6 +54,7 @@ export default class Bot {
     }
 
     // Register event handlers
+    // eslint-disable-next-line complexity
     this.client.on('interactionCreate', async interaction => {
       try {
         if (interaction.isCommand()) {
@@ -105,6 +102,7 @@ export default class Bot {
       } catch (error: unknown) {
         debug(error);
 
+        // This can fail if the message was deleted, and we don't want to crash the whole bot
         try {
           if ((interaction.isCommand() || interaction.isButton()) && (interaction.replied || interaction.deferred)) {
             await interaction.editReply(errorMsg(error as Error));
@@ -140,8 +138,10 @@ export default class Bot {
               commands: this.commandsByName.map(c => c.slashCommand),
             });
           }),
+          // Remove commands registered on bot (if they exist)
           rest.put(Routes.applicationCommands(this.client.user!.id), {body: []}),
-        ]);
+        ],
+        );
       }
 
       this.client.user!.setPresence({
@@ -164,91 +164,5 @@ export default class Bot {
     this.client.on('guildCreate', handleGuildCreate);
     this.client.on('voiceStateUpdate', handleVoiceStateUpdate);
     await this.client.login();
-
-    // --- Express API ---
-    app.post('/command/:name', async (req, res) => {
-      const { name } = req.params;
-      let { guildId, userId, options, voiceChannelId } = req.body;
-
-      console.log(`[API] Received command: ${name}`);
-      console.log(`[API] Body:`, JSON.stringify(req.body, null, 2));
-
-      const command = this.commandsByName.get(name);
-      if (!command) {
-        console.log(`[API] Command not found: ${name}`);
-        return res.status(404).json({ error: 'Command not found' });
-      }
-
-      // Find the real guild, member, channel from the Discord.js client
-      const guild = this.client.guilds.cache.get(String(guildId));
-      if (!guild) {
-        console.log(`[API] Guild not found: ${guildId}`);
-        return res.status(404).json({ error: 'Guild not found' });
-      }
-      const member = guild.members.cache.get(String(userId));
-      if (!member) {
-        console.log(`[API] Member not found: ${userId}`);
-        return res.status(404).json({ error: 'Member not found' });
-      }
-      const channel = guild.channels.cache.get(String(voiceChannelId));
-      if (!channel) {
-        console.log(`[API] Channel not found: ${voiceChannelId}`);
-      }
-
-      // Build a real ChatInputCommandInteraction-like mock
-      const mockInteraction = {
-        guild,
-        user: member.user,
-        member,
-        channel,
-        options: {
-          getString: (key: string) => options?.[key],
-          getBoolean: (key: string) => {
-            const value = options?.[key];
-            if (typeof value === 'boolean') return value;
-            if (typeof value === 'string') return value === 'true';
-            return undefined;
-          },
-          getInteger: (key: string) => {
-            const value = options?.[key];
-            if (typeof value === 'number') return value;
-            if (typeof value === 'string' && !isNaN(Number(value))) return Number(value);
-            return undefined;
-          },
-          getSubcommand: () => options?.subcommand,
-        },
-        reply: (msg: any) => {
-          console.log(`[API] Command reply:`, msg);
-          return Promise.resolve(msg);
-        },
-        deferReply: (opts?: any) => {
-          console.log(`[API] deferReply called`, opts);
-          return Promise.resolve();
-        },
-        editReply: (msg: any) => {
-          console.log(`[API] editReply:`, msg);
-          return Promise.resolve(msg);
-        },
-        isChatInputCommand: () => true,
-      };
-
-      try {
-        if (typeof command.execute === 'function') {
-          console.log(`[API] Executing command: ${name}`);
-          await command.execute(mockInteraction as any);
-          console.log(`[API] Command executed: ${name}`);
-          return res.json({ success: true });
-        } else {
-          console.log(`[API] Command does not support execution: ${name}`);
-          return res.status(400).json({ error: 'Command does not support execution' });
-        }
-      } catch (e) {
-        const err = e as Error;
-        console.log(`[API] Error executing command: ${name}`, err);
-        return res.status(500).json({ error: err.message });
-      }
-    });
-
-    app.listen(3001, () => console.log('API listening on port 3001'));
   }
 }

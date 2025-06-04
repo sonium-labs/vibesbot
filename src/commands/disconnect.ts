@@ -6,7 +6,7 @@ import PlayerManager from '../managers/player.js';
 import Command from './index.js';
 
 @injectable()
-export default class implements Command {
+export default class Disconnect implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('disconnect')
     .setDescription('pause and disconnect Muse');

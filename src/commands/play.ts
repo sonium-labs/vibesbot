@@ -12,7 +12,7 @@ import {ONE_HOUR_IN_SECONDS} from '../utils/constants.js';
 import AddQueryToQueue from '../services/add-query-to-queue.js';
 
 @injectable()
-export default class implements Command {
+export default class Play implements Command {
   public readonly slashCommand: Partial<SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder> & Pick<SlashCommandBuilder, 'toJSON'>;
 
   public requiresVC = true;
@@ -54,6 +54,8 @@ export default class implements Command {
 
   public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const query = interaction.options.getString('query')!;
+
+    console.log('ABOUT TO ADD TO QUEUE')
 
     await this.addQueryToQueue.addToQueue({
       interaction,

@@ -7,7 +7,7 @@ import {SlashCommandBuilder} from '@discordjs/builders';
 import {buildPlayingMessageEmbed} from '../utils/build-embed.js';
 
 @injectable()
-export default class implements Command {
+export default class Unskip implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('unskip')
     .setDescription('go back in the queue by one song');

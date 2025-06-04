@@ -47,19 +47,18 @@ export default class AddQueryToQueue {
     skipCurrentTrack: boolean;
     interaction: ChatInputCommandInteraction;
   }): Promise<void> {
+    console.log("ADDING TO QUEUE")
     const guildId = interaction.guild!.id;
     const player = this.playerManager.get(guildId);
     const wasPlayingSong = player.getCurrent() !== null;
 
-    const [targetVoiceChannel] = getMemberVoiceChannel(interaction.member as GuildMember) ?? getMostPopularVoiceChannel(interaction.guild!);
+    // const settings = await getGuildSettings(guildId);
 
-    const settings = await getGuildSettings(guildId);
+    // const {playlistLimit, queueAddResponseEphemeral} = settings;
 
-    const {playlistLimit, queueAddResponseEphemeral} = settings;
+    // await interaction.deferReply({ephemeral: queueAddResponseEphemeral});
 
-    await interaction.deferReply({ephemeral: queueAddResponseEphemeral});
-
-    let [newSongs, extraMsg] = await this.getSongs.getSongs(query, playlistLimit, shouldSplitChapters);
+    let [newSongs, extraMsg] = await this.getSongs.getSongs(query, 100, shouldSplitChapters);
 
     if (newSongs.length === 0) {
       throw new Error('no songs found');
@@ -86,7 +85,6 @@ export default class AddQueryToQueue {
     let statusMsg = '';
 
     if (player.voiceConnection === null) {
-      await player.connect(targetVoiceChannel);
 
       // Resume / start playback
       await player.play();
@@ -98,7 +96,7 @@ export default class AddQueryToQueue {
       await interaction.editReply({
         embeds: [buildPlayingMessageEmbed(player)],
       });
-    } else if (player.status === STATUS.IDLE) {
+    } else if (player.status === STATUS.IDLE || player.status === STATUS.PAUSED) {
       // Player is idle, start playback instead
       await player.play();
     }

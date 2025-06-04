@@ -6,7 +6,7 @@ import Command from './index.js';
 import {getGuildSettings} from '../utils/get-guild-settings.js';
 
 @injectable()
-export default class implements Command {
+export default class Config implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('config')
     .setDescription('configure bot settings')

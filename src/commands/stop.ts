@@ -7,7 +7,7 @@ import {STATUS} from '../services/player.js';
 import Command from './index.js';
 
 @injectable()
-export default class implements Command {
+export default class Stop implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('stop')
     .setDescription('stop playback, disconnect, and clear all songs in the queue');

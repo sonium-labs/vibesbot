@@ -9,7 +9,7 @@ import {getMemberVoiceChannel, getMostPopularVoiceChannel} from '../utils/channe
 import {ChatInputCommandInteraction, GuildMember} from 'discord.js';
 
 @injectable()
-export default class implements Command {
+export default class Resume implements Command {
   public readonly slashCommand = new SlashCommandBuilder()
     .setName('resume')
     .setDescription('resume playback');
