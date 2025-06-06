@@ -1,5 +1,5 @@
-import {ChatInputCommandInteraction} from 'discord.js';
-import {TYPES} from '../types.js';
+import {ChatInputCommandInteraction, TextBasedChannel} from 'discord.js';
+import {TYPES, MaybeApiMockInteraction} from '../types.js';
 import {inject, injectable} from 'inversify';
 import PlayerManager from '../managers/player.js';
 import Command from './index.js';
@@ -18,15 +18,21 @@ export default class NowPlaying implements Command {
     this.playerManager = playerManager;
   }
 
-  public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(interaction: MaybeApiMockInteraction): Promise<void> {
     const player = this.playerManager.get(interaction.guild!.id);
 
     if (!player.getCurrent()) {
       throw new Error('nothing is currently playing');
     }
 
-    await interaction.reply({
-      embeds: [buildPlayingMessageEmbed(player)],
-    });
+    if (interaction.__isApiMock) {
+      await (interaction.channel as TextBasedChannel).send({
+        embeds: [buildPlayingMessageEmbed(player)],
+      });
+    } else {
+      await interaction.reply({
+        embeds: [buildPlayingMessageEmbed(player)],
+      });
+    }
   }
 }
