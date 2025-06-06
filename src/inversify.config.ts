@@ -41,7 +41,6 @@ import Volume from './commands/volume.js';
 import ThirdParty from './services/third-party.js';
 import FileCacheProvider from './services/file-cache.js';
 import KeyValueCacheProvider from './services/key-value-cache.js';
-import Join from './commands/join.js';
 
 const container = new Container();
 
@@ -96,8 +95,7 @@ if (config.SPOTIFY_CLIENT_ID !== '' && config.SPOTIFY_CLIENT_SECRET !== '') {
   Skip,
   Stop,
   Unskip,
-  Volume,
-  Join
+  Volume
 ].forEach(command => {
   container.bind<Command>(TYPES.Command).to(command).inSingletonScope();
 });

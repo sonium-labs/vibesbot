@@ -1,3 +1,7 @@
+import { ChatInputCommandInteraction } from 'discord.js';
+
+export type MaybeApiMockInteraction = ChatInputCommandInteraction & { __isApiMock?: boolean };
+
 export const TYPES = {
   Bot: Symbol('Bot'),
   KeyValueCache: Symbol('KeyValueCache'),

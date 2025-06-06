@@ -203,6 +203,7 @@ export default class Bot {
         channel,
         replied: false,
         deferred: false,
+        __isApiMock: true,
         options: {
           getString: (key: string) => options?.[key],
           getBoolean: (key: string) => {
