@@ -64,6 +64,10 @@ export default class Favorites implements Command {
   requiresVC = (interaction: ChatInputCommandInteraction) => interaction.options.getSubcommand() === 'use';
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.channel) {
+      throw new Error('This command must be used in a text channel.');
+    }
+
     switch (interaction.options.getSubcommand()) {
       case 'use':
         await this.use(interaction);
@@ -128,6 +132,7 @@ export default class Favorites implements Command {
       addToFrontOfQueue: interaction.options.getBoolean('immediate') ?? false,
       shouldSplitChapters: interaction.options.getBoolean('split') ?? false,
       skipCurrentTrack: interaction.options.getBoolean('skip') ?? false,
+      channel: interaction.channel!,
     });
   }
 

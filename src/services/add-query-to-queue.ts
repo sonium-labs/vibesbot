@@ -1,5 +1,5 @@
 /* eslint-disable complexity */
-import {ChatInputCommandInteraction, GuildMember} from 'discord.js';
+import {ChatInputCommandInteraction, GuildMember, TextBasedChannel} from 'discord.js';
 import {inject, injectable} from 'inversify';
 import shuffle from 'array-shuffle';
 import {TYPES} from '../types.js';
@@ -13,6 +13,7 @@ import {SponsorBlock} from 'sponsorblock-api';
 import Config from './config.js';
 import KeyValueCacheProvider from './key-value-cache.js';
 import {ONE_HOUR_IN_SECONDS} from '../utils/constants.js';
+import type { MaybeApiMockInteraction } from '../types';
 
 @injectable()
 export default class AddQueryToQueue {
@@ -39,17 +40,23 @@ export default class AddQueryToQueue {
     shouldSplitChapters,
     skipCurrentTrack,
     interaction,
+    channel,
+    isApiMock = false,
   }: {
     query: string;
     addToFrontOfQueue: boolean;
     shuffleAdditions: boolean;
     shouldSplitChapters: boolean;
     skipCurrentTrack: boolean;
-    interaction: ChatInputCommandInteraction;
+    interaction: MaybeApiMockInteraction;
+    channel: TextBasedChannel;
+    isApiMock?: boolean;
   }): Promise<void> {
     const guildId = interaction.guild!.id;
     const player = this.playerManager.get(guildId);
     const wasPlayingSong = player.getCurrent() !== null;
+
+    const [targetVoiceChannel] = getMemberVoiceChannel(interaction.member as GuildMember) ?? getMostPopularVoiceChannel(interaction.guild!);
 
     // const settings = await getGuildSettings(guildId);
 
@@ -84,8 +91,8 @@ export default class AddQueryToQueue {
     let statusMsg = '';
 
     if (player.voiceConnection === null) {
+      await player.connect(targetVoiceChannel);
 
-      // Resume / start playback
       await player.play();
 
       if (wasPlayingSong) {
@@ -118,10 +125,18 @@ export default class AddQueryToQueue {
       extraMsg = ` (${extraMsg})`;
     }
 
-    await interaction.reply({
-      content: '',
-      embeds: [buildPlayingMessageEmbed(player)],
-    });
+    let responseMsg: string;
+    if (newSongs.length === 1) {
+      responseMsg = `u betcha, **${firstSong.title}** added to the${addToFrontOfQueue ? ' front of the' : ''} queue${skipCurrentTrack ? 'and current track skipped' : ''}${extraMsg}`;
+    } else {
+      responseMsg = `u betcha, **${firstSong.title}** and ${newSongs.length - 1} other songs were added to the queue${skipCurrentTrack ? 'and current track skipped' : ''}${extraMsg}`;
+    }
+
+    if(isApiMock) {
+        await channel.send({content: responseMsg});
+    } else {
+        await interaction.reply(responseMsg)
+    }
   }
 
   private async skipNonMusicSegments(song: SongMetadata) {

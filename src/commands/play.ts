@@ -10,6 +10,7 @@ import getYouTubeAndSpotifySuggestionsFor from '../utils/get-youtube-and-spotify
 import KeyValueCacheProvider from '../services/key-value-cache.js';
 import {ONE_HOUR_IN_SECONDS} from '../utils/constants.js';
 import AddQueryToQueue from '../services/add-query-to-queue.js';
+import type { MaybeApiMockInteraction } from '../types';
 
 @injectable()
 export default class Play implements Command {
@@ -52,8 +53,12 @@ export default class Play implements Command {
         .setDescription('skip the currently playing track'));
   }
 
-  public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(interaction: MaybeApiMockInteraction): Promise<void> {
     const query = interaction.options.getString('query')!;
+
+    if (!interaction.channel) {
+      throw new Error('This command must be used in a text channel.');
+    }
 
     await this.addQueryToQueue.addToQueue({
       interaction,
@@ -62,6 +67,8 @@ export default class Play implements Command {
       shuffleAdditions: interaction.options.getBoolean('shuffle') ?? false,
       shouldSplitChapters: interaction.options.getBoolean('split') ?? false,
       skipCurrentTrack: interaction.options.getBoolean('skip') ?? false,
+      channel: interaction.channel,
+      isApiMock: !!interaction.__isApiMock,
     });
   }
 
