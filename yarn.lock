@@ -162,6 +162,19 @@
     tslib "^2.5.0"
     ws "^8.13.0"
 
+"@distube/ytdl-core@^4.16.11":
+  version "4.16.11"
+  resolved "https://registry.yarnpkg.com/@distube/ytdl-core/-/ytdl-core-4.16.11.tgz#1f482858df35b6becf1a69766ef7e4e96815923e"
+  integrity sha512-yMQiicS5CuuTBsROb1iCRM09VZVL98EJ40LEtC7dMrgOWaHuJIwaL1w/ddC9DTNOUEV90T/1xYYLqM6Oc7q9kQ==
+  dependencies:
+    http-cookie-agent "^7.0.1"
+    https-proxy-agent "^7.0.6"
+    m3u8stream "^0.8.6"
+    miniget "^4.2.3"
+    sax "^1.4.1"
+    tough-cookie "^5.1.2"
+    undici "^7.8.0"
+
 "@distube/ytsr@^2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@distube/ytsr/-/ytsr-2.0.4.tgz#873b7ca767b5ff362bc0e136ae0d9ca5cbde8f7b"
@@ -398,19 +411,6 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
-
-"@nuclearplayer/ytdl-core@^4.16.11":
-  version "4.16.11"
-  resolved "https://registry.yarnpkg.com/@nuclearplayer/ytdl-core/-/ytdl-core-4.16.11.tgz#be0146c757df954759968386b7119017443bbd7b"
-  integrity sha512-Lqaq1YigUtEIH4Tfp8Ce8FwUL4Y2HYkelUZyHpn0f3uPO69HGdmfe9FwoHzqmBLyWIOB0uXANhFDhK/+T7DAoQ==
-  dependencies:
-    http-cookie-agent "^7.0.1"
-    https-proxy-agent "^7.0.6"
-    m3u8stream "^0.8.6"
-    miniget "^4.2.3"
-    sax "^1.4.1"
-    tough-cookie "^5.1.2"
-    undici "^7.8.0"
 
 "@octokit/auth-token@^2.4.4":
   version "2.5.0"
