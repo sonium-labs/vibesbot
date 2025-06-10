@@ -58,13 +58,13 @@ export default class AddQueryToQueue {
 
     const [targetVoiceChannel] = getMemberVoiceChannel(interaction.member as GuildMember) ?? getMostPopularVoiceChannel(interaction.guild!);
 
-    // const settings = await getGuildSettings(guildId);
+    const settings = await getGuildSettings(guildId);
 
-    // const {playlistLimit, queueAddResponseEphemeral} = settings;
+    const {playlistLimit, queueAddResponseEphemeral} = settings;
 
     // await interaction.deferReply({ephemeral: queueAddResponseEphemeral});
 
-    let [newSongs, extraMsg] = await this.getSongs.getSongs(query, 100, shouldSplitChapters);
+    let [newSongs, extraMsg] = await this.getSongs.getSongs(query, playlistLimit, shouldSplitChapters);
 
     if (newSongs.length === 0) {
       throw new Error('no songs found');
@@ -99,7 +99,7 @@ export default class AddQueryToQueue {
         statusMsg = 'resuming playback';
       }
 
-    } else if (player.status === STATUS.IDLE || player.status === STATUS.PAUSED) {
+    } else if (player.status === STATUS.IDLE) {
       // Player is idle, start playback instead
       await player.play();
     }
