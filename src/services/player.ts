@@ -287,7 +287,10 @@ export default class {
 
     try {
       if (this.getCurrent() && this.status !== STATUS.PAUSED) {
+        let oldStatus = this.status;
+        this.status = STATUS.IDLE;
         await this.play();
+        this.status = oldStatus;
       } else {
         this.status = STATUS.IDLE;
         this.audioPlayer?.stop(true);
