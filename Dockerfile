@@ -51,7 +51,6 @@ WORKDIR /usr/app
 
 COPY --from=builder /usr/app/dist ./dist
 COPY --from=dependencies /usr/app/prod_node_modules node_modules
-COPY package-overrides/@distube-ytdl-core-sig.js node_modules/@distube/ytdl-core/lib/sig.js
 COPY --from=builder /usr/app/node_modules/.prisma/client ./node_modules/.prisma/client
 
 COPY . .
